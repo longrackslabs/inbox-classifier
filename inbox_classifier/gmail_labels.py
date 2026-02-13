@@ -1,7 +1,7 @@
 from typing import Dict, List
 from googleapiclient.errors import HttpError
 
-LABEL_PREFIX = 'Classifier'
+LABEL_PREFIX = ''
 
 
 def get_label_id(service, label_name: str, userId: str = 'me') -> str | None:
@@ -52,7 +52,7 @@ def ensure_labels_exist(service, categories: List[str], userId: str = 'me') -> D
 
     try:
         for category in categories:
-            label_name = f'{LABEL_PREFIX}/{category}'
+            label_name = category
             label_id = get_label_id(service, label_name, userId)
             if label_id is None:
                 label_id = create_label(service, label_name, userId)
@@ -66,4 +66,4 @@ def ensure_labels_exist(service, categories: List[str], userId: str = 'me') -> D
 
 def get_label_names(categories: List[str]) -> List[str]:
     """Get Gmail label names for all categories."""
-    return [f'{LABEL_PREFIX}/{c}' for c in categories]
+    return [c for c in categories]
