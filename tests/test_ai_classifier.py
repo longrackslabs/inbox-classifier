@@ -41,3 +41,4 @@ def test_classify_email_returns_optional():
         result = classify_email(email, 'test-key')
 
         assert result['classification'] == 'OPTIONAL'
+        assert 'newsletter' in result['reasoning'].lower()
