@@ -1,5 +1,7 @@
 from unittest.mock import Mock, MagicMock
-from inbox_classifier.gmail_labels import ensure_labels_exist, get_label_id
+from googleapiclient.errors import HttpError
+import pytest
+from inbox_classifier.gmail_labels import ensure_labels_exist, get_label_id, create_label
 
 def test_ensure_labels_exist_creates_missing_labels():
     """Test that missing labels are created."""
@@ -48,3 +50,133 @@ def test_get_label_id_returns_existing_label():
     label_id = get_label_id(mock_service, 'Classifier/Important')
 
     assert label_id == 'Label_123'
+
+def test_ensure_labels_exist_when_labels_already_exist():
+    """Test that no labels are created when they already exist."""
+    mock_service = MagicMock()
+
+    # Mock the list call to return both labels already existing
+    mock_list = MagicMock()
+    mock_list.execute.return_value = {
+        'labels': [
+            {'id': 'Label_123', 'name': 'Classifier/Important'},
+            {'id': 'Label_456', 'name': 'Classifier/Optional'}
+        ]
+    }
+
+    # Set up the mock chain
+    mock_labels = MagicMock()
+    mock_labels.list.return_value = mock_list
+
+    mock_users = MagicMock()
+    mock_users.labels.return_value = mock_labels
+
+    mock_service.users.return_value = mock_users
+
+    label_ids = ensure_labels_exist(mock_service)
+
+    assert label_ids['important'] == 'Label_123'
+    assert label_ids['optional'] == 'Label_456'
+    # Verify create was never called
+    assert mock_labels.create.call_count == 0
+
+def test_get_label_id_when_label_not_found():
+    """Test that get_label_id returns None when label is not found."""
+    mock_service = Mock()
+    mock_service.users().labels().list().execute.return_value = {
+        'labels': [
+            {'id': 'Label_123', 'name': 'Classifier/Important'}
+        ]
+    }
+
+    label_id = get_label_id(mock_service, 'NonExistent/Label')
+
+    assert label_id is None
+
+def test_ensure_labels_exist_mixed_scenario():
+    """Test mixed scenario where one label exists and one doesn't."""
+    mock_service = MagicMock()
+
+    # Mock the list call to return only the Important label
+    mock_list = MagicMock()
+    mock_list.execute.return_value = {
+        'labels': [
+            {'id': 'Label_123', 'name': 'Classifier/Important'}
+        ]
+    }
+
+    # Mock the create call to return ID for the Optional label
+    mock_create = MagicMock()
+    mock_create.execute.return_value = {'id': 'Label_456', 'name': 'Classifier/Optional'}
+
+    # Set up the mock chain
+    mock_labels = MagicMock()
+    mock_labels.list.return_value = mock_list
+    mock_labels.create.return_value = mock_create
+
+    mock_users = MagicMock()
+    mock_users.labels.return_value = mock_labels
+
+    mock_service.users.return_value = mock_users
+
+    label_ids = ensure_labels_exist(mock_service)
+
+    assert label_ids['important'] == 'Label_123'
+    assert label_ids['optional'] == 'Label_456'
+    # Verify create was called only once (for Optional)
+    assert mock_labels.create.call_count == 1
+
+def test_get_label_id_handles_api_error():
+    """Test that get_label_id handles HttpError gracefully."""
+    mock_service = Mock()
+    mock_error = HttpError(resp=Mock(status=500), content=b'Server Error')
+    mock_service.users().labels().list().execute.side_effect = mock_error
+
+    label_id = get_label_id(mock_service, 'Classifier/Important')
+
+    assert label_id is None
+
+def test_create_label_raises_on_api_error():
+    """Test that create_label raises HttpError when API call fails."""
+    mock_service = MagicMock()
+    mock_error = HttpError(resp=Mock(status=400), content=b'Bad Request')
+
+    mock_create = MagicMock()
+    mock_create.execute.side_effect = mock_error
+
+    mock_labels = MagicMock()
+    mock_labels.create.return_value = mock_create
+
+    mock_users = MagicMock()
+    mock_users.labels.return_value = mock_labels
+
+    mock_service.users.return_value = mock_users
+
+    with pytest.raises(HttpError):
+        create_label(mock_service, 'Test/Label')
+
+def test_ensure_labels_exist_raises_on_create_error():
+    """Test that ensure_labels_exist raises HttpError when label creation fails."""
+    mock_service = MagicMock()
+
+    # Mock the list call to return no labels
+    mock_list = MagicMock()
+    mock_list.execute.return_value = {'labels': []}
+
+    # Mock the create call to raise an error
+    mock_create = MagicMock()
+    mock_error = HttpError(resp=Mock(status=403), content=b'Permission Denied')
+    mock_create.execute.side_effect = mock_error
+
+    # Set up the mock chain
+    mock_labels = MagicMock()
+    mock_labels.list.return_value = mock_list
+    mock_labels.create.return_value = mock_create
+
+    mock_users = MagicMock()
+    mock_users.labels.return_value = mock_labels
+
+    mock_service.users.return_value = mock_users
+
+    with pytest.raises(HttpError):
+        ensure_labels_exist(mock_service)
