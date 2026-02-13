@@ -1,6 +1,7 @@
+import re
 from anthropic import Anthropic
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 import time
 
 CONFIG_DIR = Path.home() / '.inbox-classifier'
@@ -13,27 +14,16 @@ DEFAULT_RULES = """IMPORTANT emails include:
 - Work: emails from colleagues, project-related messages
 - Action required: needs response, decision, or follow-up
 
+ROUTINE emails include:
+- Monthly statements, account notifications, balance updates
+- Automated confirmations that don't need action
+- Regular account activity summaries
+
 OPTIONAL emails include:
-- Routine: monthly statements, account notifications, balance updates
 - Promotional: sales, deals, marketing campaigns
 - Newsletters: regular updates, digests, subscriptions
 - Notifications: social media, app updates, automated alerts
 - Bulk: templated content, mass emails"""
-
-PROMPT_TEMPLATE = """Analyze this email and classify it as IMPORTANT or OPTIONAL.
-
-{rules}
-
-Email Details:
-Subject: {subject}
-From: {sender}
-Body: {body}
-
-Respond with EXACTLY this format:
-IMPORTANT: [brief reason]
-or
-OPTIONAL: [brief reason]
-"""
 
 
 def load_rules() -> str:
@@ -45,24 +35,35 @@ def load_rules() -> str:
     return DEFAULT_RULES
 
 
+def parse_categories(rules: str) -> List[str]:
+    """Parse category names from rules text (e.g. IMPORTANT, ROUTINE, OPTIONAL)."""
+    return re.findall(r'^([A-Z_]+) emails include:', rules, re.MULTILINE)
+
+
 def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:
     """Classify email using Claude API.
 
-    Args:
-        email: Dict with keys: subject, sender, body
-        api_key: Anthropic API key
-
-    Returns:
-        Dict with keys: classification (IMPORTANT/OPTIONAL), reasoning
+    Categories are parsed dynamically from rules.md.
     """
     client = Anthropic(api_key=api_key)
+    rules = load_rules()
+    categories = parse_categories(rules)
 
-    prompt = PROMPT_TEMPLATE.format(
-        rules=load_rules(),
-        subject=email['subject'],
-        sender=email['sender'],
-        body=email['body']
-    )
+    category_list = ', '.join(categories)
+    response_format = '\nor\n'.join(f'{c}: [brief reason]' for c in categories)
+
+    prompt = f"""Analyze this email and classify it as {category_list}.
+
+{rules}
+
+Email Details:
+Subject: {email['subject']}
+From: {email['sender']}
+Body: {email['body']}
+
+Respond with EXACTLY this format:
+{response_format}
+"""
 
     # Rate limiting: max 1 request per second
     time.sleep(1)
@@ -77,19 +78,16 @@ def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:
 
     response_text = message.content[0].text
 
-    # Parse response
-    if response_text.startswith('IMPORTANT:'):
-        classification = 'IMPORTANT'
-        reasoning = response_text.replace('IMPORTANT:', '').strip()
-    elif response_text.startswith('OPTIONAL:'):
-        classification = 'OPTIONAL'
-        reasoning = response_text.replace('OPTIONAL:', '').strip()
-    else:
-        # Default to IMPORTANT if unclear
-        classification = 'IMPORTANT'
-        reasoning = 'Uncertain - keeping in inbox for safety'
+    # Parse response against dynamic categories
+    for category in categories:
+        if response_text.startswith(f'{category}:'):
+            return {
+                'classification': category,
+                'reasoning': response_text.replace(f'{category}:', '').strip()
+            }
 
+    # Default to first category if unclear
     return {
-        'classification': classification,
-        'reasoning': reasoning
+        'classification': categories[0],
+        'reasoning': 'Uncertain - defaulting to first category for safety'
     }

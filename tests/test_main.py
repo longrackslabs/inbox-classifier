@@ -4,8 +4,11 @@ from inbox_classifier.main import process_emails
 
 @patch('inbox_classifier.main.load_dotenv')
 @patch('inbox_classifier.main.os.getenv')
+@patch('inbox_classifier.main.load_rules')
+@patch('inbox_classifier.main.parse_categories')
 @patch('inbox_classifier.main.get_gmail_service')
 @patch('inbox_classifier.main.ensure_labels_exist')
+@patch('inbox_classifier.main.get_label_names')
 @patch('inbox_classifier.main.fetch_unread_emails')
 @patch('inbox_classifier.main.get_email_details')
 @patch('inbox_classifier.main.classify_email')
@@ -17,19 +20,27 @@ def test_process_emails_full_workflow(
     mock_classify,
     mock_get_details,
     mock_fetch,
+    mock_get_label_names,
     mock_ensure_labels,
     mock_get_service,
+    mock_parse_categories,
+    mock_load_rules,
     mock_getenv,
     mock_load_dotenv
 ):
     """Test the complete email processing workflow."""
     # Setup mocks
     mock_getenv.return_value = 'test-api-key'
+    mock_load_rules.return_value = 'IMPORTANT emails include:\n- stuff\n\nROUTINE emails include:\n- stuff\n\nOPTIONAL emails include:\n- stuff'
+    mock_parse_categories.return_value = ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
 
-    mock_label_ids = {'important': 'label-123', 'optional': 'label-456'}
+    mock_label_ids = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
     mock_ensure_labels.return_value = mock_label_ids
+    mock_get_label_names.return_value = [
+        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
+    ]
 
     # Mock email data
     mock_fetch.return_value = [
@@ -66,12 +77,15 @@ def test_process_emails_full_workflow(
     # Verify workflow
     mock_load_dotenv.assert_called_once()
     mock_getenv.assert_called_once_with('ANTHROPIC_API_KEY')
+    mock_load_rules.assert_called_once()
+    mock_parse_categories.assert_called_once()
     mock_get_service.assert_called_once()
-    mock_ensure_labels.assert_called_once_with(mock_service)
+    mock_ensure_labels.assert_called_once_with(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+    mock_get_label_names.assert_called_once_with(['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
 
     mock_fetch.assert_called_once_with(
         mock_service,
-        label_ids=['label-123', 'label-456']
+        exclude_labels=['Classifier/Important', 'Classifier/Routine', 'Classifier/Optional']
     )
 
     # Verify both emails were processed
@@ -105,23 +119,34 @@ def test_process_emails_missing_api_key(mock_getenv, mock_load_dotenv):
 
 @patch('inbox_classifier.main.load_dotenv')
 @patch('inbox_classifier.main.os.getenv')
+@patch('inbox_classifier.main.load_rules')
+@patch('inbox_classifier.main.parse_categories')
 @patch('inbox_classifier.main.get_gmail_service')
 @patch('inbox_classifier.main.ensure_labels_exist')
+@patch('inbox_classifier.main.get_label_names')
 @patch('inbox_classifier.main.fetch_unread_emails')
 @patch('inbox_classifier.main.ClassificationLogger')
 def test_process_emails_no_messages(
     mock_logger_class,
     mock_fetch,
+    mock_get_label_names,
     mock_ensure_labels,
     mock_get_service,
+    mock_parse_categories,
+    mock_load_rules,
     mock_getenv,
     mock_load_dotenv
 ):
     """Test handling when no emails to process."""
     mock_getenv.return_value = 'test-api-key'
+    mock_load_rules.return_value = 'IMPORTANT emails include:\n- stuff'
+    mock_parse_categories.return_value = ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
-    mock_ensure_labels.return_value = {'important': 'label-123', 'optional': 'label-456'}
+    mock_ensure_labels.return_value = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
+    mock_get_label_names.return_value = [
+        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
+    ]
     mock_fetch.return_value = []
 
     # Should complete without error
@@ -131,8 +156,11 @@ def test_process_emails_no_messages(
 
 @patch('inbox_classifier.main.load_dotenv')
 @patch('inbox_classifier.main.os.getenv')
+@patch('inbox_classifier.main.load_rules')
+@patch('inbox_classifier.main.parse_categories')
 @patch('inbox_classifier.main.get_gmail_service')
 @patch('inbox_classifier.main.ensure_labels_exist')
+@patch('inbox_classifier.main.get_label_names')
 @patch('inbox_classifier.main.fetch_unread_emails')
 @patch('inbox_classifier.main.get_email_details')
 @patch('inbox_classifier.main.classify_email')
@@ -144,16 +172,24 @@ def test_process_emails_error_handling(
     mock_classify,
     mock_get_details,
     mock_fetch,
+    mock_get_label_names,
     mock_ensure_labels,
     mock_get_service,
+    mock_parse_categories,
+    mock_load_rules,
     mock_getenv,
     mock_load_dotenv
 ):
     """Test that errors on individual emails don't stop processing."""
     mock_getenv.return_value = 'test-api-key'
+    mock_load_rules.return_value = 'IMPORTANT emails include:\n- stuff'
+    mock_parse_categories.return_value = ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
-    mock_ensure_labels.return_value = {'important': 'label-123', 'optional': 'label-456'}
+    mock_ensure_labels.return_value = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
+    mock_get_label_names.return_value = [
+        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
+    ]
 
     mock_fetch.return_value = [
         {'id': 'msg-1'},

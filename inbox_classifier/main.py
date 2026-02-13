@@ -4,9 +4,9 @@ import logging
 from dotenv import load_dotenv
 
 from .gmail_auth import get_gmail_service
-from .gmail_labels import ensure_labels_exist
+from .gmail_labels import ensure_labels_exist, get_label_names
 from .email_fetcher import fetch_unread_emails, get_email_details
-from .ai_classifier import classify_email
+from .ai_classifier import classify_email, load_rules, parse_categories
 from .email_labeler import apply_label
 from .logger import ClassificationLogger
 
@@ -25,16 +25,18 @@ def process_emails():
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not found in environment")
 
+    # Parse categories from rules
+    rules = load_rules()
+    categories = parse_categories(rules)
+
     # Initialize components
     service = get_gmail_service()
-    label_ids = ensure_labels_exist(service)
+    label_ids = ensure_labels_exist(service, categories)
     classification_logger = ClassificationLogger()
 
     # Fetch unread emails (exclude already classified)
-    messages = fetch_unread_emails(
-        service,
-        label_ids=[label_ids['important'], label_ids['optional']]
-    )
+    exclude_labels = get_label_names(categories)
+    messages = fetch_unread_emails(service, exclude_labels=exclude_labels)
 
     if not messages:
         logger.info("No new emails to process")
@@ -51,12 +53,8 @@ def process_emails():
             # Classify with AI
             result = classify_email(email, api_key)
 
-            # Determine which label to apply
-            label_id = (label_ids['important']
-                       if result['classification'] == 'IMPORTANT'
-                       else label_ids['optional'])
-
-            # Apply label
+            # Apply the matching label
+            label_id = label_ids[result['classification'].lower()]
             apply_label(service, email['id'], label_id)
 
             # Log the classification

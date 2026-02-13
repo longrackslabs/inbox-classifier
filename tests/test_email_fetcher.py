@@ -40,17 +40,20 @@ def test_get_email_details_extracts_metadata():
     assert details['sender'] == 'sender@example.com'
     assert 'Test body' in details['body']
 
-def test_fetch_unread_emails_excludes_classified():
-    """Test that query excludes already classified emails by label name."""
+def test_fetch_unread_emails_excludes_labels():
+    """Test that query excludes specified labels by name."""
     mock_service = Mock()
     mock_service.users().messages().list().execute.return_value = {
         'messages': []
     }
 
-    fetch_unread_emails(mock_service)
+    fetch_unread_emails(mock_service, exclude_labels=[
+        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
+    ])
 
     call_args = mock_service.users().messages().list.call_args
     assert '-label:Classifier/Important' in call_args.kwargs['q']
+    assert '-label:Classifier/Routine' in call_args.kwargs['q']
     assert '-label:Classifier/Optional' in call_args.kwargs['q']
 
 def test_get_email_details_handles_multipart():

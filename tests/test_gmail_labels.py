@@ -1,7 +1,7 @@
 from unittest.mock import Mock, MagicMock
 from googleapiclient.errors import HttpError
 import pytest
-from inbox_classifier.gmail_labels import ensure_labels_exist, get_label_id, create_label
+from inbox_classifier.gmail_labels import ensure_labels_exist, get_label_id, create_label, get_label_names
 
 def test_ensure_labels_exist_creates_missing_labels():
     """Test that missing labels are created."""
@@ -15,6 +15,7 @@ def test_ensure_labels_exist_creates_missing_labels():
     mock_create = MagicMock()
     create_returns = [
         {'id': 'Label_123', 'name': 'Classifier/Important'},
+        {'id': 'Label_789', 'name': 'Classifier/Routine'},
         {'id': 'Label_456', 'name': 'Classifier/Optional'}
     ]
     mock_create.execute.side_effect = create_returns
@@ -29,13 +30,15 @@ def test_ensure_labels_exist_creates_missing_labels():
 
     mock_service.users.return_value = mock_users
 
-    label_ids = ensure_labels_exist(mock_service)
+    label_ids = ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
 
     assert 'important' in label_ids
+    assert 'routine' in label_ids
     assert 'optional' in label_ids
     assert label_ids['important'] == 'Label_123'
+    assert label_ids['routine'] == 'Label_789'
     assert label_ids['optional'] == 'Label_456'
-    assert mock_labels.create.call_count == 2
+    assert mock_labels.create.call_count == 3
 
 def test_get_label_id_returns_existing_label():
     """Test getting ID of existing label."""
@@ -55,11 +58,12 @@ def test_ensure_labels_exist_when_labels_already_exist():
     """Test that no labels are created when they already exist."""
     mock_service = MagicMock()
 
-    # Mock the list call to return both labels already existing
+    # Mock the list call to return all labels already existing
     mock_list = MagicMock()
     mock_list.execute.return_value = {
         'labels': [
             {'id': 'Label_123', 'name': 'Classifier/Important'},
+            {'id': 'Label_789', 'name': 'Classifier/Routine'},
             {'id': 'Label_456', 'name': 'Classifier/Optional'}
         ]
     }
@@ -73,9 +77,10 @@ def test_ensure_labels_exist_when_labels_already_exist():
 
     mock_service.users.return_value = mock_users
 
-    label_ids = ensure_labels_exist(mock_service)
+    label_ids = ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
 
     assert label_ids['important'] == 'Label_123'
+    assert label_ids['routine'] == 'Label_789'
     assert label_ids['optional'] == 'Label_456'
     # Verify create was never called
     assert mock_labels.create.call_count == 0
@@ -94,7 +99,7 @@ def test_get_label_id_when_label_not_found():
     assert label_id is None
 
 def test_ensure_labels_exist_mixed_scenario():
-    """Test mixed scenario where one label exists and one doesn't."""
+    """Test mixed scenario where some labels exist and some don't."""
     mock_service = MagicMock()
 
     # Mock the list call to return only the Important label
@@ -105,9 +110,12 @@ def test_ensure_labels_exist_mixed_scenario():
         ]
     }
 
-    # Mock the create call to return ID for the Optional label
+    # Mock the create call to return IDs for missing labels
     mock_create = MagicMock()
-    mock_create.execute.return_value = {'id': 'Label_456', 'name': 'Classifier/Optional'}
+    mock_create.execute.side_effect = [
+        {'id': 'Label_789', 'name': 'Classifier/Routine'},
+        {'id': 'Label_456', 'name': 'Classifier/Optional'}
+    ]
 
     # Set up the mock chain
     mock_labels = MagicMock()
@@ -119,12 +127,13 @@ def test_ensure_labels_exist_mixed_scenario():
 
     mock_service.users.return_value = mock_users
 
-    label_ids = ensure_labels_exist(mock_service)
+    label_ids = ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
 
     assert label_ids['important'] == 'Label_123'
+    assert label_ids['routine'] == 'Label_789'
     assert label_ids['optional'] == 'Label_456'
-    # Verify create was called only once (for Optional)
-    assert mock_labels.create.call_count == 1
+    # Verify create was called twice (for Routine and Optional)
+    assert mock_labels.create.call_count == 2
 
 def test_get_label_id_handles_api_error():
     """Test that get_label_id handles HttpError gracefully."""
@@ -179,4 +188,14 @@ def test_ensure_labels_exist_raises_on_create_error():
     mock_service.users.return_value = mock_users
 
     with pytest.raises(HttpError):
-        ensure_labels_exist(mock_service)
+        ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+
+def test_get_label_names():
+    """Test generating label names from categories."""
+    names = get_label_names(['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+
+    assert names == [
+        'Classifier/Important',
+        'Classifier/Routine',
+        'Classifier/Optional'
+    ]
