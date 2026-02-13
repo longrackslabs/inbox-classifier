@@ -62,6 +62,7 @@ def process_emails():
                 email_id=email['id'],
                 subject=email['subject'],
                 sender=email['sender'],
+                to=email['to'],
                 classification=result['classification'],
                 reasoning=result['reasoning']
             )

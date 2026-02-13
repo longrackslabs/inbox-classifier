@@ -59,6 +59,7 @@ def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:
 Email Details:
 Subject: {email['subject']}
 From: {email['sender']}
+To: {email['to']}
 Body: {email['body']}
 
 Respond with EXACTLY this format:

@@ -23,6 +23,7 @@ class ClassificationLogger:
         email_id: str,
         subject: str,
         sender: str,
+        to: str,
         classification: str,
         reasoning: str
     ):
@@ -32,6 +33,7 @@ class ClassificationLogger:
             email_id: Gmail message ID
             subject: Email subject
             sender: Email sender
+            to: Email recipient
             classification: IMPORTANT or OPTIONAL
             reasoning: Classification reasoning from AI
         """
@@ -40,6 +42,7 @@ class ClassificationLogger:
             'email_id': email_id,
             'subject': subject,
             'sender': sender,
+            'to': to,
             'classification': classification,
             'reasoning': reasoning
         }

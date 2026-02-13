@@ -26,10 +26,10 @@ def fetch_unread_emails(service, exclude_labels: List[str] = None) -> List[Dict]
     return results.get('messages', [])
 
 def get_email_details(service, message_id: str) -> Dict[str, str]:
-    """Get email subject, sender, and body preview.
+    """Get email subject, sender, recipient, and body preview.
 
     Returns:
-        Dict with keys: id, subject, sender, body, label_ids
+        Dict with keys: id, subject, sender, to, body, label_ids
     """
     message = service.users().messages().get(
         userId='me',
@@ -40,6 +40,7 @@ def get_email_details(service, message_id: str) -> Dict[str, str]:
     headers = message['payload'].get('headers', [])
     subject = next((h['value'] for h in headers if h['name'] == 'Subject'), '')
     sender = next((h['value'] for h in headers if h['name'] == 'From'), '')
+    to = next((h['value'] for h in headers if h['name'] == 'To'), '')
 
     # Extract body (handle both body.data and parts)
     body = ''
@@ -60,6 +61,7 @@ def get_email_details(service, message_id: str) -> Dict[str, str]:
         'id': message_id,
         'subject': subject,
         'sender': sender,
+        'to': to,
         'body': body_preview,
         'label_ids': message.get('labelIds', [])
     }
