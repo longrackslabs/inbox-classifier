@@ -14,7 +14,7 @@ DEFAULT_RULES = """IMPORTANT emails include:
 - Action required: needs response, decision, or follow-up
 
 OPTIONAL emails include:
-- Monthly statements and routine account notifications
+- Routine: monthly statements, account notifications, balance updates
 - Promotional: sales, deals, marketing campaigns
 - Newsletters: regular updates, digests, subscriptions
 - Notifications: social media, app updates, automated alerts
