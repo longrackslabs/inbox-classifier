@@ -1,0 +1,15 @@
+[project]
+name = "inbox-classifier"
+version = "0.1.0"
+description = "AI-powered Gmail inbox classifier"
+requires-python = ">=3.10"
+dependencies = [
+    "google-api-python-client>=2.150.0",
+    "google-auth-httplib2>=0.2.0",
+    "google-auth-oauthlib>=1.2.1",
+    "anthropic>=0.40.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.scripts]
+inbox-classifier = "inbox_classifier.main:main"
