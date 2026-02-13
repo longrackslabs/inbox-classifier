@@ -30,7 +30,7 @@ def test_ensure_labels_exist_creates_missing_labels():
 
     mock_service.users.return_value = mock_users
 
-    label_ids = ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+    label_ids = ensure_labels_exist(mock_service, ['Important', 'Routine', 'Optional'])
 
     assert 'important' in label_ids
     assert 'routine' in label_ids
@@ -77,7 +77,7 @@ def test_ensure_labels_exist_when_labels_already_exist():
 
     mock_service.users.return_value = mock_users
 
-    label_ids = ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+    label_ids = ensure_labels_exist(mock_service, ['Important', 'Routine', 'Optional'])
 
     assert label_ids['important'] == 'Label_123'
     assert label_ids['routine'] == 'Label_789'
@@ -127,7 +127,7 @@ def test_ensure_labels_exist_mixed_scenario():
 
     mock_service.users.return_value = mock_users
 
-    label_ids = ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+    label_ids = ensure_labels_exist(mock_service, ['Important', 'Routine', 'Optional'])
 
     assert label_ids['important'] == 'Label_123'
     assert label_ids['routine'] == 'Label_789'
@@ -188,11 +188,11 @@ def test_ensure_labels_exist_raises_on_create_error():
     mock_service.users.return_value = mock_users
 
     with pytest.raises(HttpError):
-        ensure_labels_exist(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+        ensure_labels_exist(mock_service, ['Important', 'Routine', 'Optional'])
 
 def test_get_label_names():
     """Test generating label names from categories."""
-    names = get_label_names(['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+    names = get_label_names(['Important', 'Routine', 'Optional'])
 
     assert names == [
         'Classifier/Important',

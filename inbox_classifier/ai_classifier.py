@@ -7,19 +7,19 @@ import time
 CONFIG_DIR = Path.home() / '.inbox-classifier'
 RULES_FILE = CONFIG_DIR / 'rules.md'
 
-DEFAULT_RULES = """IMPORTANT emails include:
+DEFAULT_RULES = """Important emails include:
 - Transactional: receipts, confirmations, invoices, shipping notifications
 - Security: password resets, security alerts, 2FA codes
 - Personal: real people asking questions, replies in conversations
 - Work: emails from colleagues, project-related messages
 - Action required: needs response, decision, or follow-up
 
-ROUTINE emails include:
+Routine emails include:
 - Monthly statements, account notifications, balance updates
 - Automated confirmations that don't need action
 - Regular account activity summaries
 
-OPTIONAL emails include:
+Optional emails include:
 - Promotional: sales, deals, marketing campaigns
 - Newsletters: regular updates, digests, subscriptions
 - Notifications: social media, app updates, automated alerts
@@ -37,7 +37,7 @@ def load_rules() -> str:
 
 def parse_categories(rules: str) -> List[str]:
     """Parse category names from rules text (e.g. IMPORTANT, ROUTINE, OPTIONAL)."""
-    return re.findall(r'^([A-Z_]+) emails include:', rules, re.MULTILINE)
+    return re.findall(r'^(\w+) emails include:', rules, re.MULTILINE)
 
 
 def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:

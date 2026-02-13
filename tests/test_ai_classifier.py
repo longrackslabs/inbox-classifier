@@ -1,14 +1,14 @@
 from unittest.mock import Mock, patch
 from inbox_classifier.ai_classifier import classify_email, load_rules, parse_categories
 
-MOCK_RULES = """IMPORTANT emails include:
+MOCK_RULES = """Important emails include:
 - Transactional: receipts, confirmations, invoices, shipping notifications
 - Security: password resets, security alerts, 2FA codes
 
-ROUTINE emails include:
+Routine emails include:
 - Monthly statements, account notifications
 
-OPTIONAL emails include:
+Optional emails include:
 - Promotional: sales, deals, marketing campaigns
 - Newsletters: regular updates, digests"""
 
@@ -23,7 +23,7 @@ def test_classify_email_returns_important(mock_anthropic, mock_load_rules, mock_
     mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='IMPORTANT: This is a receipt')]
+    mock_response.content = [Mock(text='Important: This is a receipt')]
     mock_client.messages.create.return_value = mock_response
 
     email = {
@@ -34,7 +34,7 @@ def test_classify_email_returns_important(mock_anthropic, mock_load_rules, mock_
 
     result = classify_email(email, 'test-key')
 
-    assert result['classification'] == 'IMPORTANT'
+    assert result['classification'] == 'Important'
     assert 'receipt' in result['reasoning'].lower()
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
@@ -48,7 +48,7 @@ def test_classify_email_returns_optional(mock_anthropic, mock_load_rules, mock_s
     mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='OPTIONAL: This is a newsletter')]
+    mock_response.content = [Mock(text='Optional: This is a newsletter')]
     mock_client.messages.create.return_value = mock_response
 
     email = {
@@ -59,7 +59,7 @@ def test_classify_email_returns_optional(mock_anthropic, mock_load_rules, mock_s
 
     result = classify_email(email, 'test-key')
 
-    assert result['classification'] == 'OPTIONAL'
+    assert result['classification'] == 'Optional'
     assert 'newsletter' in result['reasoning'].lower()
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
@@ -73,7 +73,7 @@ def test_classify_email_returns_routine(mock_anthropic, mock_load_rules, mock_sl
     mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='ROUTINE: Monthly account statement')]
+    mock_response.content = [Mock(text='Routine: Monthly account statement')]
     mock_client.messages.create.return_value = mock_response
 
     email = {
@@ -84,7 +84,7 @@ def test_classify_email_returns_routine(mock_anthropic, mock_load_rules, mock_sl
 
     result = classify_email(email, 'test-key')
 
-    assert result['classification'] == 'ROUTINE'
+    assert result['classification'] == 'Routine'
     assert 'statement' in result['reasoning'].lower()
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
@@ -109,21 +109,21 @@ def test_classify_email_defaults_to_first_category(mock_anthropic, mock_load_rul
 
     result = classify_email(email, 'test-key')
 
-    assert result['classification'] == 'IMPORTANT'
+    assert result['classification'] == 'Important'
     assert 'defaulting' in result['reasoning'].lower()
 
 def test_parse_categories():
     """Test parsing category names from rules text."""
     categories = parse_categories(MOCK_RULES)
 
-    assert categories == ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
+    assert categories == ['Important', 'Routine', 'Optional']
 
 def test_parse_categories_single():
     """Test parsing a single category."""
-    rules = "URGENT emails include:\n- Something important"
+    rules = "Urgent emails include:\n- Something important"
     categories = parse_categories(rules)
 
-    assert categories == ['URGENT']
+    assert categories == ['Urgent']
 
 @patch('inbox_classifier.ai_classifier.RULES_FILE')
 @patch('inbox_classifier.ai_classifier.CONFIG_DIR')
@@ -133,7 +133,7 @@ def test_load_rules_creates_default(mock_config_dir, mock_rules_file):
 
     rules = load_rules()
 
-    assert 'IMPORTANT emails include:' in rules
-    assert 'ROUTINE emails include:' in rules
-    assert 'OPTIONAL emails include:' in rules
+    assert 'Important emails include:' in rules
+    assert 'Routine emails include:' in rules
+    assert 'Optional emails include:' in rules
     mock_config_dir.mkdir.assert_called_once_with(parents=True, exist_ok=True)

@@ -31,8 +31,8 @@ def test_process_emails_full_workflow(
     """Test the complete email processing workflow."""
     # Setup mocks
     mock_getenv.return_value = 'test-api-key'
-    mock_load_rules.return_value = 'IMPORTANT emails include:\n- stuff\n\nROUTINE emails include:\n- stuff\n\nOPTIONAL emails include:\n- stuff'
-    mock_parse_categories.return_value = ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
+    mock_load_rules.return_value = 'Important emails include:\n- stuff\n\nRoutine emails include:\n- stuff\n\nOptional emails include:\n- stuff'
+    mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
 
@@ -64,8 +64,8 @@ def test_process_emails_full_workflow(
     ]
 
     mock_classify.side_effect = [
-        {'classification': 'IMPORTANT', 'reasoning': 'Work email'},
-        {'classification': 'OPTIONAL', 'reasoning': 'Newsletter'}
+        {'classification': 'Important', 'reasoning': 'Work email'},
+        {'classification': 'Optional', 'reasoning': 'Newsletter'}
     ]
 
     mock_logger = Mock()
@@ -80,8 +80,8 @@ def test_process_emails_full_workflow(
     mock_load_rules.assert_called_once()
     mock_parse_categories.assert_called_once()
     mock_get_service.assert_called_once()
-    mock_ensure_labels.assert_called_once_with(mock_service, ['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
-    mock_get_label_names.assert_called_once_with(['IMPORTANT', 'ROUTINE', 'OPTIONAL'])
+    mock_ensure_labels.assert_called_once_with(mock_service, ['Important', 'Routine', 'Optional'])
+    mock_get_label_names.assert_called_once_with(['Important', 'Routine', 'Optional'])
 
     mock_fetch.assert_called_once_with(
         mock_service,
@@ -104,7 +104,7 @@ def test_process_emails_full_workflow(
         email_id='msg-1',
         subject='Important Email',
         sender='boss@work.com',
-        classification='IMPORTANT',
+        classification='Important',
         reasoning='Work email'
     )
 
@@ -139,8 +139,8 @@ def test_process_emails_no_messages(
 ):
     """Test handling when no emails to process."""
     mock_getenv.return_value = 'test-api-key'
-    mock_load_rules.return_value = 'IMPORTANT emails include:\n- stuff'
-    mock_parse_categories.return_value = ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
+    mock_load_rules.return_value = 'Important emails include:\n- stuff'
+    mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
     mock_ensure_labels.return_value = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
@@ -182,8 +182,8 @@ def test_process_emails_error_handling(
 ):
     """Test that errors on individual emails don't stop processing."""
     mock_getenv.return_value = 'test-api-key'
-    mock_load_rules.return_value = 'IMPORTANT emails include:\n- stuff'
-    mock_parse_categories.return_value = ['IMPORTANT', 'ROUTINE', 'OPTIONAL']
+    mock_load_rules.return_value = 'Important emails include:\n- stuff'
+    mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
     mock_ensure_labels.return_value = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
@@ -207,7 +207,7 @@ def test_process_emails_error_handling(
         }
     ]
 
-    mock_classify.return_value = {'classification': 'IMPORTANT', 'reasoning': 'Test'}
+    mock_classify.return_value = {'classification': 'Important', 'reasoning': 'Test'}
     mock_logger = Mock()
     mock_logger_class.return_value = mock_logger
 
