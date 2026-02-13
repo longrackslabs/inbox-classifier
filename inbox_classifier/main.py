@@ -54,7 +54,7 @@ def process_emails():
             result = classify_email(email, api_key)
 
             # Apply the matching label
-            label_id = label_ids[result['classification'].lower()]
+            label_id = label_ids[result['classification']]
             apply_label(service, email['id'], label_id)
 
             # Log the classification

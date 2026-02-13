@@ -52,11 +52,11 @@ def ensure_labels_exist(service, categories: List[str], userId: str = 'me') -> D
 
     try:
         for category in categories:
-            label_name = f'{LABEL_PREFIX}/{category.capitalize()}'
+            label_name = f'{LABEL_PREFIX}/{category}'
             label_id = get_label_id(service, label_name, userId)
             if label_id is None:
                 label_id = create_label(service, label_name, userId)
-            label_ids[category.lower()] = label_id
+            label_ids[category] = label_id
 
         return label_ids
     except HttpError as error:
@@ -66,4 +66,4 @@ def ensure_labels_exist(service, categories: List[str], userId: str = 'me') -> D
 
 def get_label_names(categories: List[str]) -> List[str]:
     """Get Gmail label names for all categories."""
-    return [f'{LABEL_PREFIX}/{c.capitalize()}' for c in categories]
+    return [f'{LABEL_PREFIX}/{c}' for c in categories]
