@@ -12,13 +12,14 @@ AI-powered Gmail inbox classifier using Claude API.
 
 ## Setup
 
-### 1. Install Dependencies
+### 1. Clone and Install
 
 ```bash
+gh repo clone longrackslabs/inbox-classifier
 cd inbox-classifier
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
 ### 2. Set up Gmail API
@@ -58,6 +59,13 @@ The service runs continuously and:
 - Logs decisions to `~/.inbox-classifier/classifications.jsonl`
 
 View labels in Gmail to review classifications.
+
+## Customizing Classification Rules
+
+Rules live in `~/.inbox-classifier/rules.md` (created on first run with defaults).
+Edit this file to change what counts as IMPORTANT vs OPTIONAL — no rebuild needed.
+
+Or ask Claude Code: "make newsletters important" / "add a rule that emails from my boss are always important"
 
 ## Interacting via Claude Code
 
