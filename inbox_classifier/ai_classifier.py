@@ -1,10 +1,12 @@
 from anthropic import Anthropic
+from pathlib import Path
 from typing import Dict
 import time
 
-CLASSIFICATION_PROMPT = """Analyze this email and classify it as IMPORTANT or OPTIONAL.
+CONFIG_DIR = Path.home() / '.inbox-classifier'
+RULES_FILE = CONFIG_DIR / 'rules.md'
 
-IMPORTANT emails include:
+DEFAULT_RULES = """IMPORTANT emails include:
 - Transactional: receipts, confirmations, invoices, shipping notifications
 - Security: password resets, security alerts, 2FA codes
 - Personal: real people asking questions, replies in conversations
@@ -15,7 +17,11 @@ OPTIONAL emails include:
 - Promotional: sales, deals, marketing campaigns
 - Newsletters: regular updates, digests, subscriptions
 - Notifications: social media, app updates, automated alerts
-- Bulk: templated content, mass emails
+- Bulk: templated content, mass emails"""
+
+PROMPT_TEMPLATE = """Analyze this email and classify it as IMPORTANT or OPTIONAL.
+
+{rules}
 
 Email Details:
 Subject: {subject}
@@ -27,6 +33,16 @@ IMPORTANT: [brief reason]
 or
 OPTIONAL: [brief reason]
 """
+
+
+def load_rules() -> str:
+    """Load classification rules from ~/.inbox-classifier/rules.md, creating default if missing."""
+    if RULES_FILE.exists():
+        return RULES_FILE.read_text().strip()
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    RULES_FILE.write_text(DEFAULT_RULES)
+    return DEFAULT_RULES
+
 
 def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:
     """Classify email using Claude API.
@@ -40,7 +56,8 @@ def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:
     """
     client = Anthropic(api_key=api_key)
 
-    prompt = CLASSIFICATION_PROMPT.format(
+    prompt = PROMPT_TEMPLATE.format(
+        rules=load_rules(),
         subject=email['subject'],
         sender=email['sender'],
         body=email['body']

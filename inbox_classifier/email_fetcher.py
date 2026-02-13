@@ -2,7 +2,7 @@ import base64
 from typing import List, Dict
 
 def fetch_unread_emails(service, label_ids: List[str] = None) -> List[Dict]:
-    """Fetch unread emails from inbox, optionally excluding labeled ones.
+    """Fetch unread emails from inbox, excluding already classified ones.
 
     Args:
         service: Gmail API service
@@ -11,12 +11,7 @@ def fetch_unread_emails(service, label_ids: List[str] = None) -> List[Dict]:
     Returns:
         List of message objects with 'id' field
     """
-    query = 'is:unread in:inbox'
-
-    # Exclude already classified emails
-    if label_ids:
-        for label_id in label_ids:
-            query += f' -label:{label_id}'
+    query = 'is:unread in:inbox -label:Classifier/Important -label:Classifier/Optional'
 
     results = service.users().messages().list(
         userId='me',
