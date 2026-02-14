@@ -23,7 +23,11 @@ Optional emails include:
 - Promotional: sales, deals, marketing campaigns
 - Newsletters: regular updates, digests, subscriptions
 - Notifications: social media, app updates, automated alerts
-- Bulk: templated content, mass emails"""
+- Bulk: templated content, mass emails
+
+Skip classification for:
+- from:example@example.com
+- subject:Example subject to skip"""
 
 
 def load_rules() -> str:

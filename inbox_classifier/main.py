@@ -8,6 +8,7 @@ from .gmail_auth import get_gmail_service
 from .gmail_labels import ensure_labels_exist, get_label_names
 from .email_fetcher import fetch_unread_emails, get_email_details
 from .ai_classifier import classify_email, load_rules, parse_categories
+from .skip_rules import parse_skip_rules, should_skip_email
 from .email_labeler import apply_label
 from .logger import ClassificationLogger
 
@@ -35,9 +36,10 @@ def process_emails():
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not found in environment")
 
-    # Parse categories from rules
+    # Parse categories and skip rules
     rules = load_rules()
     categories = parse_categories(rules)
+    skip_rules = parse_skip_rules(rules)
 
     # Initialize components
     service = get_gmail_service()
@@ -59,6 +61,14 @@ def process_emails():
         try:
             # Get email details
             email = get_email_details(service, msg['id'])
+
+            # Skip if matches skip rules (leave in inbox untouched)
+            if should_skip_email(email, skip_rules):
+                logger.info(
+                    f"Skipped '{email['subject'][:50]}' "
+                    f"from {email['sender'][:30]} (matches skip rule)"
+                )
+                continue
 
             # Classify with AI
             result = classify_email(email, api_key)

@@ -140,4 +140,20 @@ def test_load_rules_creates_default(mock_config_dir, mock_rules_file):
     assert 'Important emails include:' in rules
     assert 'Routine emails include:' in rules
     assert 'Optional emails include:' in rules
+    assert 'Skip classification for:' in rules
     mock_config_dir.mkdir.assert_called_once_with(parents=True, exist_ok=True)
+
+def test_parse_categories_ignores_skip_section():
+    """Test that skip classification section doesn't create a category."""
+    rules = """Important emails include:
+- stuff
+
+Optional emails include:
+- stuff
+
+Skip classification for:
+- from:ebay@ebay.com"""
+    categories = parse_categories(rules)
+
+    assert categories == ['Important', 'Optional']
+    assert 'Skip' not in categories

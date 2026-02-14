@@ -6,6 +6,7 @@ from inbox_classifier.main import process_emails
 @patch('inbox_classifier.main.os.getenv')
 @patch('inbox_classifier.main.load_rules')
 @patch('inbox_classifier.main.parse_categories')
+@patch('inbox_classifier.main.parse_skip_rules')
 @patch('inbox_classifier.main.get_gmail_service')
 @patch('inbox_classifier.main.ensure_labels_exist')
 @patch('inbox_classifier.main.get_label_names')
@@ -13,9 +14,11 @@ from inbox_classifier.main import process_emails
 @patch('inbox_classifier.main.get_email_details')
 @patch('inbox_classifier.main.classify_email')
 @patch('inbox_classifier.main.apply_label')
+@patch('inbox_classifier.main.should_skip_email')
 @patch('inbox_classifier.main.ClassificationLogger')
 def test_process_emails_full_workflow(
     mock_logger_class,
+    mock_should_skip,
     mock_apply_label,
     mock_classify,
     mock_get_details,
@@ -23,6 +26,7 @@ def test_process_emails_full_workflow(
     mock_get_label_names,
     mock_ensure_labels,
     mock_get_service,
+    mock_parse_skip,
     mock_parse_categories,
     mock_load_rules,
     mock_getenv,
@@ -33,6 +37,8 @@ def test_process_emails_full_workflow(
     mock_getenv.return_value = 'test-api-key'
     mock_load_rules.return_value = 'Important emails include:\n- stuff\n\nRoutine emails include:\n- stuff\n\nOptional emails include:\n- stuff'
     mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
+    mock_parse_skip.return_value = []
+    mock_should_skip.return_value = False
     mock_service = Mock()
     mock_get_service.return_value = mock_service
 
@@ -122,6 +128,7 @@ def test_process_emails_missing_api_key(mock_getenv, mock_load_dotenv):
 @patch('inbox_classifier.main.os.getenv')
 @patch('inbox_classifier.main.load_rules')
 @patch('inbox_classifier.main.parse_categories')
+@patch('inbox_classifier.main.parse_skip_rules')
 @patch('inbox_classifier.main.get_gmail_service')
 @patch('inbox_classifier.main.ensure_labels_exist')
 @patch('inbox_classifier.main.get_label_names')
@@ -133,6 +140,7 @@ def test_process_emails_no_messages(
     mock_get_label_names,
     mock_ensure_labels,
     mock_get_service,
+    mock_parse_skip,
     mock_parse_categories,
     mock_load_rules,
     mock_getenv,
@@ -142,6 +150,7 @@ def test_process_emails_no_messages(
     mock_getenv.return_value = 'test-api-key'
     mock_load_rules.return_value = 'Important emails include:\n- stuff'
     mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
+    mock_parse_skip.return_value = []
     mock_service = Mock()
     mock_get_service.return_value = mock_service
     mock_ensure_labels.return_value = {'Important': 'label-123', 'Routine': 'label-789', 'Optional': 'label-456'}
@@ -157,6 +166,7 @@ def test_process_emails_no_messages(
 @patch('inbox_classifier.main.os.getenv')
 @patch('inbox_classifier.main.load_rules')
 @patch('inbox_classifier.main.parse_categories')
+@patch('inbox_classifier.main.parse_skip_rules')
 @patch('inbox_classifier.main.get_gmail_service')
 @patch('inbox_classifier.main.ensure_labels_exist')
 @patch('inbox_classifier.main.get_label_names')
@@ -164,9 +174,11 @@ def test_process_emails_no_messages(
 @patch('inbox_classifier.main.get_email_details')
 @patch('inbox_classifier.main.classify_email')
 @patch('inbox_classifier.main.apply_label')
+@patch('inbox_classifier.main.should_skip_email')
 @patch('inbox_classifier.main.ClassificationLogger')
 def test_process_emails_error_handling(
     mock_logger_class,
+    mock_should_skip,
     mock_apply_label,
     mock_classify,
     mock_get_details,
@@ -174,6 +186,7 @@ def test_process_emails_error_handling(
     mock_get_label_names,
     mock_ensure_labels,
     mock_get_service,
+    mock_parse_skip,
     mock_parse_categories,
     mock_load_rules,
     mock_getenv,
@@ -183,6 +196,8 @@ def test_process_emails_error_handling(
     mock_getenv.return_value = 'test-api-key'
     mock_load_rules.return_value = 'Important emails include:\n- stuff'
     mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
+    mock_parse_skip.return_value = []
+    mock_should_skip.return_value = False
     mock_service = Mock()
     mock_get_service.return_value = mock_service
     mock_ensure_labels.return_value = {'Important': 'label-123', 'Routine': 'label-789', 'Optional': 'label-456'}
@@ -215,3 +230,80 @@ def test_process_emails_error_handling(
     # Second email should still be processed
     assert mock_classify.call_count == 1
     assert mock_apply_label.call_count == 1
+
+@patch('inbox_classifier.main.load_dotenv')
+@patch('inbox_classifier.main.os.getenv')
+@patch('inbox_classifier.main.load_rules')
+@patch('inbox_classifier.main.parse_categories')
+@patch('inbox_classifier.main.parse_skip_rules')
+@patch('inbox_classifier.main.get_gmail_service')
+@patch('inbox_classifier.main.ensure_labels_exist')
+@patch('inbox_classifier.main.get_label_names')
+@patch('inbox_classifier.main.fetch_unread_emails')
+@patch('inbox_classifier.main.get_email_details')
+@patch('inbox_classifier.main.classify_email')
+@patch('inbox_classifier.main.apply_label')
+@patch('inbox_classifier.main.should_skip_email')
+@patch('inbox_classifier.main.ClassificationLogger')
+def test_process_emails_skips_matching_email(
+    mock_logger_class,
+    mock_should_skip,
+    mock_apply_label,
+    mock_classify,
+    mock_get_details,
+    mock_fetch,
+    mock_get_label_names,
+    mock_ensure_labels,
+    mock_get_service,
+    mock_parse_skip,
+    mock_parse_categories,
+    mock_load_rules,
+    mock_getenv,
+    mock_load_dotenv
+):
+    """Test that emails matching skip rules are not classified."""
+    mock_getenv.return_value = 'test-api-key'
+    mock_load_rules.return_value = 'Important emails include:\n- stuff'
+    mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
+    mock_parse_skip.return_value = [('from', 'ebay@ebay.com')]
+    mock_service = Mock()
+    mock_get_service.return_value = mock_service
+    mock_ensure_labels.return_value = {'Important': 'label-123', 'Routine': 'label-789', 'Optional': 'label-456'}
+    mock_get_label_names.return_value = ['Important', 'Routine', 'Optional']
+
+    mock_fetch.return_value = [
+        {'id': 'msg-1'},
+        {'id': 'msg-2'}
+    ]
+
+    ebay_email = {
+        'id': 'msg-1',
+        'subject': 'Your item sold!',
+        'sender': 'eBay <ebay@ebay.com>',
+        'to': 'me@example.com',
+        'body': 'Congrats on your sale'
+    }
+    normal_email = {
+        'id': 'msg-2',
+        'subject': 'Newsletter',
+        'sender': 'news@company.com',
+        'to': 'me@example.com',
+        'body': 'Weekly update'
+    }
+
+    mock_get_details.side_effect = [ebay_email, normal_email]
+    # First email matches skip, second doesn't
+    mock_should_skip.side_effect = [True, False]
+    mock_classify.return_value = {'classification': 'Optional', 'reasoning': 'Newsletter'}
+    mock_logger = Mock()
+    mock_logger_class.return_value = mock_logger
+
+    process_emails()
+
+    # Both emails fetched details
+    assert mock_get_details.call_count == 2
+    # Only non-skipped email was classified
+    assert mock_classify.call_count == 1
+    assert mock_apply_label.call_count == 1
+    # Only non-skipped email was logged
+    assert mock_logger.log_classification.call_count == 1
