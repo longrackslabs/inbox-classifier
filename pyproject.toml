@@ -7,6 +7,7 @@ name = "inbox-classifier"
 version = "0.1.0"
 description = "AI-powered Gmail inbox classifier"
 requires-python = ">=3.10"
+license = "MIT"
 dependencies = [
     "google-api-python-client>=2.150.0",
     "google-auth-httplib2>=0.2.0",
