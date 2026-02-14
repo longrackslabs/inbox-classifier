@@ -57,7 +57,7 @@ First run will open browser for Gmail authentication.
 
 The service runs continuously and:
 - Checks for new unread emails every 60 seconds
-- Skips emails matching skip rules (leaves them in inbox)
+- Skips emails matching skip rules (leaves them in inbox, marks as read to avoid reprocessing)
 - Classifies remaining emails using Claude AI
 - Applies a Gmail label and archives (removes from inbox)
 - Logs decisions to `~/.inbox-classifier/classifications.jsonl`
