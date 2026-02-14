@@ -5,10 +5,11 @@ AI-powered Gmail inbox classifier using Claude API.
 ## Features
 
 - Monitors Gmail inbox in real-time
-- Classifies emails as Important or Optional using Claude AI
-- Applies labels for easy review
+- Classifies emails into dynamic categories using Claude AI
+- Applies Gmail labels and archives classified emails
+- Skip rules let actionable emails stay in your inbox untouched
+- Categories and rules are fully customizable via `rules.md`
 - Logs all classification decisions
-- Conservative mode - labels only, no auto-archiving
 
 ## Setup
 
@@ -45,8 +46,10 @@ ANTHROPIC_API_KEY=your_api_key_here
 ### 4. Run the Service
 
 ```bash
-python -m inbox_classifier.main
+inbox-classifier
 ```
+
+Or: `python -m inbox_classifier.main`
 
 First run will open browser for Gmail authentication.
 
@@ -54,18 +57,61 @@ First run will open browser for Gmail authentication.
 
 The service runs continuously and:
 - Checks for new unread emails every 60 seconds
-- Classifies each email using Claude AI
-- Applies labels: `Classifier/Important` or `Classifier/Optional`
+- Skips emails matching skip rules (leaves them in inbox)
+- Classifies remaining emails using Claude AI
+- Applies a Gmail label and archives (removes from inbox)
 - Logs decisions to `~/.inbox-classifier/classifications.jsonl`
-
-View labels in Gmail to review classifications.
+- Service log at `~/.inbox-classifier/service.log`
 
 ## Customizing Classification Rules
 
-Rules live in `~/.inbox-classifier/rules.md` (created on first run with defaults).
-Edit this file to change what counts as IMPORTANT vs OPTIONAL — no rebuild needed.
+Rules live in `~/.inbox-classifier/rules.md` (created on first run with defaults). The service re-reads this file every cycle — no restart needed.
 
-Or ask Claude Code: "make newsletters important" / "add a rule that emails from my boss are always important"
+### Categories
+
+Define categories with the format `CategoryName emails include:`. Use number prefixes to control Gmail label sort order:
+
+```markdown
+0_Important emails include:
+- Security: password resets, security alerts, 2FA codes
+- Personal: real people asking questions
+- Action required: needs response or follow-up
+
+1_Routine emails include:
+- Monthly statements, balance updates
+- Automated confirmations that don't need action
+
+2_Receipts emails include:
+- Purchase receipts and transaction confirmations
+- Order confirmations with itemized details
+
+3_Optional emails include:
+- Newsletters: regular updates, digests
+- Notifications: social media, app updates
+
+4_Ads emails include:
+- Promotional: sales, deals, marketing campaigns
+- Marketing emails with discount codes
+```
+
+Note: "Important" is a reserved Gmail label name. Use a prefix like `0_Important`.
+
+### Skip Rules (Manual Action Queue)
+
+Emails matching skip rules are left in your inbox untouched — no AI call, no label, no archive. Use this for emails that need manual action (eBay sales, bills, etc.).
+
+```markdown
+Skip classification for:
+- from:ebay@ebay.com
+- from:notifications@ebay.com
+- subject:Your item sold
+- subject:Payment received
+```
+
+- `from:` — case-insensitive substring match on sender
+- `subject:` — case-insensitive substring match on subject
+- Skipped emails stay in your inbox as a visible to-do list
+- No Claude API calls are made for skipped emails (saves cost)
 
 ## Interacting via Claude Code
 
@@ -73,6 +119,7 @@ Ask Claude Code questions like:
 - "Show me what emails were classified today"
 - "How many emails were marked as optional this week?"
 - "Show me the classification log"
+- "reset" — resets all classified emails back to inbox as unread
 
 Claude Code can read `~/.inbox-classifier/classifications.jsonl` to answer.
 
@@ -82,7 +129,7 @@ See [docs/launchd-setup.md](docs/launchd-setup.md) for setting up automatic star
 
 ## Cost Estimate
 
-- ~$0.0015 per email classified
+- ~$0.0015 per email classified (skipped emails are free)
 - 50 emails/day = ~$2.25/month
 - 100 emails/day = ~$4.50/month
 
