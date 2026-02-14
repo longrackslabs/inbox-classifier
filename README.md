@@ -113,6 +113,33 @@ Skip classification for:
 - Skipped emails stay in your inbox but are marked as read to prevent reprocessing
 - No Claude API calls are made for skipped emails (saves cost)
 
+## Remote Rules (Optional)
+
+Store your `rules.md` in a private GitHub repo so you can train the classifier from any machine.
+
+### Setup
+
+1. Create a private repo (e.g., `longrackslabs/inbox-rules`) with your `rules.md` at the root
+2. Create a GitHub personal access token with `repo` scope
+3. Add to your `.env`:
+
+```
+RULES_REPO=longrackslabs/inbox-rules
+GITHUB_TOKEN=ghp_your_token_here
+```
+
+The service fetches `rules.md` from GitHub each cycle and caches it locally. If GitHub is unreachable, the last cached version is used.
+
+### Training
+
+From any machine with Claude Code and git access to the rules repo:
+
+1. Clone the rules repo: `git clone git@github.com:longrackslabs/inbox-rules.git`
+2. Edit `rules.md` using Claude Code training workflow
+3. Commit and push — service picks up changes within 60 seconds
+
+If `RULES_REPO` is not set, the service reads from `~/.inbox-classifier/rules.md` (original behavior).
+
 ## Interacting via Claude Code
 
 Ask Claude Code questions like:
