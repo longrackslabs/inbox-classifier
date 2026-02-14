@@ -110,7 +110,7 @@ Skip classification for:
 
 - `from:` — case-insensitive substring match on sender
 - `subject:` — case-insensitive substring match on subject
-- Skipped emails stay in your inbox as a visible to-do list
+- Skipped emails stay in your inbox but are marked as read to prevent reprocessing
 - No Claude API calls are made for skipped emails (saves cost)
 
 ## Interacting via Claude Code

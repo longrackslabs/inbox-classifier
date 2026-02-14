@@ -62,8 +62,13 @@ def process_emails():
             # Get email details
             email = get_email_details(service, msg['id'])
 
-            # Skip if matches skip rules (leave in inbox untouched)
+            # Skip if matches skip rules (leave in inbox, mark read so we don't reprocess)
             if should_skip_email(email, skip_rules):
+                service.users().messages().modify(
+                    userId='me',
+                    id=email['id'],
+                    body={'removeLabelIds': ['UNREAD']}
+                ).execute()
                 logger.info(
                     f"Skipped '{email['subject'][:50]}' "
                     f"from {email['sender'][:30]} (matches skip rule)"
