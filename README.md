@@ -65,7 +65,7 @@ The service runs continuously and:
 
 ## Customizing Classification Rules
 
-Rules live in `~/.inbox-classifier/rules.md` (created on first run with defaults). The service re-reads this file every cycle — no restart needed.
+Rules live in `~/.inbox-classifier/rules.md` (created on first run with defaults). See [rules.md.example](rules.md.example) for a full example. The service re-reads this file every cycle — no restart needed.
 
 ### Categories
 

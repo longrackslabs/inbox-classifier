@@ -1,0 +1,28 @@
+0_Important emails include:
+- Security: password resets, security alerts, 2FA codes
+- Personal: real people asking questions, replies in conversations
+- Work: emails from colleagues, project-related messages
+- Action required: needs response, decision, or follow-up
+
+1_Routine emails include:
+- Monthly statements, balance updates, invoices
+- Automated confirmations that don't need action
+- Regular account activity summaries
+
+2_Receipts emails include:
+- Purchase receipts and transaction confirmations
+- Order confirmations with itemized details
+- Shipping notifications for completed purchases
+
+3_Optional emails include:
+- Newsletters: regular updates, digests, subscriptions
+- Notifications: social media, app updates, automated alerts
+- Bulk: templated content, mass emails
+
+4_Ads emails include:
+- Promotional: sales, deals, marketing campaigns
+- Marketing emails with discount codes and offers
+
+Skip classification for:
+- from:example@example.com
+- subject:Example subject to skip
