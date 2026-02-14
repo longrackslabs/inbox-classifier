@@ -1,5 +1,7 @@
 # Inbox Classifier
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 AI-powered Gmail inbox classifier using Claude API.
 
 ## Features
