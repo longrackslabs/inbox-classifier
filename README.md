@@ -123,6 +123,16 @@ Ask Claude Code questions like:
 
 Claude Code can read `~/.inbox-classifier/classifications.jsonl` to answer.
 
+### Reset
+
+Say "reset" to Claude Code to reprocess all classified emails. This will:
+
+1. Find all messages with classifier labels (0_Important, 1_Routine, etc.)
+2. Remove those labels
+3. Add INBOX and UNREAD labels back
+
+The service will reclassify them on its next polling cycle. Useful after updating `rules.md` to see how new rules affect existing emails.
+
 ## Running as Background Service (macOS)
 
 See [docs/launchd-setup.md](docs/launchd-setup.md) for setting up automatic startup.
