@@ -36,11 +36,9 @@ def test_process_emails_full_workflow(
     mock_service = Mock()
     mock_get_service.return_value = mock_service
 
-    mock_label_ids = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
+    mock_label_ids = {'Important': 'label-123', 'Routine': 'label-789', 'Optional': 'label-456'}
     mock_ensure_labels.return_value = mock_label_ids
-    mock_get_label_names.return_value = [
-        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
-    ]
+    mock_get_label_names.return_value = ['Important', 'Routine', 'Optional']
 
     # Mock email data
     mock_fetch.return_value = [
@@ -53,12 +51,14 @@ def test_process_emails_full_workflow(
             'id': 'msg-1',
             'subject': 'Important Email',
             'sender': 'boss@work.com',
+            'to': 'me@example.com',
             'body': 'Urgent meeting'
         },
         {
             'id': 'msg-2',
             'subject': 'Newsletter',
             'sender': 'news@company.com',
+            'to': 'me@example.com',
             'body': 'Weekly update'
         }
     ]
@@ -85,7 +85,7 @@ def test_process_emails_full_workflow(
 
     mock_fetch.assert_called_once_with(
         mock_service,
-        exclude_labels=['Classifier/Important', 'Classifier/Routine', 'Classifier/Optional']
+        exclude_labels=['Important', 'Routine', 'Optional']
     )
 
     # Verify both emails were processed
@@ -94,8 +94,8 @@ def test_process_emails_full_workflow(
 
     # Verify correct labels applied
     mock_apply_label.assert_has_calls([
-        call(mock_service, 'msg-1', 'label-123'),  # IMPORTANT
-        call(mock_service, 'msg-2', 'label-456')   # OPTIONAL
+        call(mock_service, 'msg-1', 'label-123'),  # Important
+        call(mock_service, 'msg-2', 'label-456')   # Optional
     ])
 
     # Verify logging
@@ -104,6 +104,7 @@ def test_process_emails_full_workflow(
         email_id='msg-1',
         subject='Important Email',
         sender='boss@work.com',
+        to='me@example.com',
         classification='Important',
         reasoning='Work email'
     )
@@ -143,10 +144,8 @@ def test_process_emails_no_messages(
     mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
-    mock_ensure_labels.return_value = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
-    mock_get_label_names.return_value = [
-        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
-    ]
+    mock_ensure_labels.return_value = {'Important': 'label-123', 'Routine': 'label-789', 'Optional': 'label-456'}
+    mock_get_label_names.return_value = ['Important', 'Routine', 'Optional']
     mock_fetch.return_value = []
 
     # Should complete without error
@@ -186,10 +185,8 @@ def test_process_emails_error_handling(
     mock_parse_categories.return_value = ['Important', 'Routine', 'Optional']
     mock_service = Mock()
     mock_get_service.return_value = mock_service
-    mock_ensure_labels.return_value = {'important': 'label-123', 'routine': 'label-789', 'optional': 'label-456'}
-    mock_get_label_names.return_value = [
-        'Classifier/Important', 'Classifier/Routine', 'Classifier/Optional'
-    ]
+    mock_ensure_labels.return_value = {'Important': 'label-123', 'Routine': 'label-789', 'Optional': 'label-456'}
+    mock_get_label_names.return_value = ['Important', 'Routine', 'Optional']
 
     mock_fetch.return_value = [
         {'id': 'msg-1'},
@@ -203,6 +200,7 @@ def test_process_emails_error_handling(
             'id': 'msg-2',
             'subject': 'Test',
             'sender': 'test@test.com',
+            'to': 'me@example.com',
             'body': 'Body'
         }
     ]

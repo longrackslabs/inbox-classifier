@@ -11,7 +11,8 @@ def test_logger_writes_to_file(tmp_path):
         email_id='msg1',
         subject='Test Subject',
         sender='test@example.com',
-        classification='IMPORTANT',
+        to='me@example.com',
+        classification='Important',
         reasoning='Test reason'
     )
 
@@ -22,7 +23,8 @@ def test_logger_writes_to_file(tmp_path):
         entry = json.loads(line)
 
         assert entry['email_id'] == 'msg1'
-        assert entry['classification'] == 'IMPORTANT'
+        assert entry['classification'] == 'Important'
+        assert entry['to'] == 'me@example.com'
         assert 'timestamp' in entry
 
 def test_logger_creates_directory(tmp_path):
@@ -34,7 +36,8 @@ def test_logger_creates_directory(tmp_path):
         email_id='msg1',
         subject='Test',
         sender='test@example.com',
-        classification='OPTIONAL',
+        to='me@example.com',
+        classification='Optional',
         reasoning='Test'
     )
 

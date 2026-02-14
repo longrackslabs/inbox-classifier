@@ -29,6 +29,7 @@ def test_classify_email_returns_important(mock_anthropic, mock_load_rules, mock_
     email = {
         'subject': 'Your receipt',
         'sender': 'store@example.com',
+        'to': 'me@example.com',
         'body': 'Thank you for your purchase'
     }
 
@@ -54,6 +55,7 @@ def test_classify_email_returns_optional(mock_anthropic, mock_load_rules, mock_s
     email = {
         'subject': 'Weekly digest',
         'sender': 'newsletter@example.com',
+        'to': 'me@example.com',
         'body': 'Here are this weeks top stories'
     }
 
@@ -79,6 +81,7 @@ def test_classify_email_returns_routine(mock_anthropic, mock_load_rules, mock_sl
     email = {
         'subject': 'Your monthly statement',
         'sender': 'bank@example.com',
+        'to': 'me@example.com',
         'body': 'Your statement is ready'
     }
 
@@ -104,6 +107,7 @@ def test_classify_email_defaults_to_first_category(mock_anthropic, mock_load_rul
     email = {
         'subject': 'Ambiguous',
         'sender': 'unknown@example.com',
+        'to': 'me@example.com',
         'body': 'Some content'
     }
 
