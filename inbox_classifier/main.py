@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from .gmail_auth import get_gmail_service
 from .gmail_labels import ensure_labels_exist, get_label_names
 from .email_fetcher import fetch_unread_emails, get_email_details
-from .ai_classifier import classify_email, load_rules, parse_categories
+from .ai_classifier import classify_email, parse_categories
+from .rules_loader import load_rules
 from .skip_rules import parse_skip_rules, should_skip_email
 from .email_labeler import apply_label
 from .logger import ClassificationLogger

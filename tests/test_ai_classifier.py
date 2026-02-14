@@ -1,5 +1,5 @@
 from unittest.mock import Mock, patch
-from inbox_classifier.ai_classifier import classify_email, load_rules, parse_categories
+from inbox_classifier.ai_classifier import classify_email, parse_categories
 
 MOCK_RULES = """Important emails include:
 - Transactional: receipts, confirmations, invoices, shipping notifications
@@ -129,19 +129,6 @@ def test_parse_categories_single():
 
     assert categories == ['Urgent']
 
-@patch('inbox_classifier.ai_classifier.RULES_FILE')
-@patch('inbox_classifier.ai_classifier.CONFIG_DIR')
-def test_load_rules_creates_default(mock_config_dir, mock_rules_file):
-    """Test that load_rules creates default rules when file is missing."""
-    mock_rules_file.exists.return_value = False
-
-    rules = load_rules()
-
-    assert 'Important emails include:' in rules
-    assert 'Routine emails include:' in rules
-    assert 'Optional emails include:' in rules
-    assert 'Skip classification for:' in rules
-    mock_config_dir.mkdir.assert_called_once_with(parents=True, exist_ok=True)
 
 def test_parse_categories_ignores_skip_section():
     """Test that skip classification section doesn't create a category."""
