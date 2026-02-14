@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
 from .gmail_auth import get_gmail_service
@@ -10,10 +11,19 @@ from .ai_classifier import classify_email, load_rules, parse_categories
 from .email_labeler import apply_label
 from .logger import ClassificationLogger
 
-# Configure logging
+# Configure logging to both stdout and file
+LOG_DIR = Path.home() / '.inbox-classifier'
+LOG_FILE = LOG_DIR / 'service.log'
+
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_FILE),
+    ]
 )
 logger = logging.getLogger(__name__)
 
