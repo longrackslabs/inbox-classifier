@@ -79,6 +79,13 @@ def process_emails():
             # Classify with AI
             result = classify_email(email, api_key)
 
+            if result is None:
+                logger.warning(
+                    f"Could not classify '{email['subject'][:50]}' "
+                    f"from {email['sender'][:30]} — leaving in inbox"
+                )
+                continue
+
             # Apply the matching label
             label_id = label_ids[result['classification']]
             apply_label(service, email['id'], label_id)

@@ -58,8 +58,5 @@ Respond with EXACTLY this format:
                 'reasoning': response_text.replace(f'{category}:', '').strip()
             }
 
-    # Default to first category if unclear
-    return {
-        'classification': categories[0],
-        'reasoning': 'Uncertain - defaulting to first category for safety'
-    }
+    # No match — return None so caller can skip this email
+    return None
