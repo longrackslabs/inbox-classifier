@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
-from .gmail_auth import get_gmail_service
+from .gmail_auth import get_gmail_service, AuthenticationError
 from .gmail_labels import ensure_labels_exist, get_label_names
 from .email_fetcher import fetch_unread_emails, get_email_details
 from .ai_classifier import classify_email, parse_categories
@@ -109,6 +109,12 @@ def process_emails():
             logger.error(f"Error processing email {msg['id']}: {e}")
             continue
 
+def write_heartbeat():
+    """Write a heartbeat timestamp so external monitors can detect staleness."""
+    heartbeat_path = LOG_DIR / 'heartbeat'
+    heartbeat_path.write_text(str(int(time.time())))
+
+
 def main():
     """Main service loop."""
     logger.info("Starting inbox classifier service")
@@ -116,12 +122,18 @@ def main():
     while True:
         try:
             process_emails()
+            write_heartbeat()
             logger.info("Waiting 60 seconds before next check...")
             time.sleep(60)
 
         except KeyboardInterrupt:
             logger.info("Service stopped by user")
             break
+
+        except AuthenticationError as e:
+            logger.critical(f"FATAL: {e}")
+            logger.critical("Service cannot continue without valid credentials. Exiting.")
+            raise SystemExit(2)
 
         except Exception as e:
             logger.error(f"Error in main loop: {e}")

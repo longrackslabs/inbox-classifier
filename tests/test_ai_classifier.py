@@ -93,8 +93,8 @@ def test_classify_email_returns_routine(mock_anthropic, mock_load_rules, mock_sl
 @patch('inbox_classifier.ai_classifier.time.sleep')
 @patch('inbox_classifier.ai_classifier.load_rules')
 @patch('inbox_classifier.ai_classifier.Anthropic')
-def test_classify_email_defaults_to_first_category(mock_anthropic, mock_load_rules, mock_sleep):
-    """Test that unrecognized responses default to first category."""
+def test_classify_email_returns_none_for_unrecognized(mock_anthropic, mock_load_rules, mock_sleep):
+    """Test that unrecognized responses return None (no default category)."""
     mock_load_rules.return_value = MOCK_RULES
 
     mock_client = Mock()
@@ -113,8 +113,7 @@ def test_classify_email_defaults_to_first_category(mock_anthropic, mock_load_rul
 
     result = classify_email(email, 'test-key')
 
-    assert result['classification'] == 'Important'
-    assert 'defaulting' in result['reasoning'].lower()
+    assert result is None
 
 def test_parse_categories():
     """Test parsing category names from rules text."""

@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -8,6 +9,12 @@ from google.auth.exceptions import RefreshError
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly',
           'https://www.googleapis.com/auth/gmail.modify']
+
+
+class AuthenticationError(Exception):
+    """Raised when Gmail OAuth token is revoked and cannot be refreshed headlessly."""
+    pass
+
 
 def get_gmail_service():
     """Authenticate and return Gmail API service."""
@@ -29,15 +36,27 @@ def get_gmail_service():
         if creds and creds.expired and creds.refresh_token:
             try:
                 creds.refresh(Request())
-            except RefreshError:
-                # If refresh fails, fall back to re-authentication
-                creds = None
+            except RefreshError as e:
+                raise AuthenticationError(
+                    f"Gmail OAuth refresh token revoked or expired: {e}\n"
+                    "Re-authenticate on a machine with a browser:\n"
+                    "  1. Run inbox-classifier locally (Mac)\n"
+                    "  2. Copy ~/.inbox-classifier/token.json to Linux"
+                ) from e
 
         if not creds:
             if not creds_path.exists():
                 raise FileNotFoundError(
                     "credentials.json not found. "
                     "Download from Google Cloud Console."
+                )
+            # Only attempt browser auth if DISPLAY is available (not headless)
+            if not os.environ.get('DISPLAY') and not sys.stdout.isatty():
+                raise AuthenticationError(
+                    "No valid token and no browser available (headless server).\n"
+                    "Re-authenticate on a machine with a browser:\n"
+                    "  1. Run inbox-classifier locally (Mac)\n"
+                    "  2. Copy ~/.inbox-classifier/token.json to Linux"
                 )
             flow = InstalledAppFlow.from_client_secrets_file(
                 str(creds_path), SCOPES)
