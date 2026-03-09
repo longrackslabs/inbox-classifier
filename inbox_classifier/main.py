@@ -16,6 +16,7 @@ from .logger import ClassificationLogger
 # Configure logging to both stdout and file
 LOG_DIR = Path.home() / '.inbox-classifier'
 LOG_FILE = LOG_DIR / 'service.log'
+TOKEN_PATH = LOG_DIR / 'token.json'
 
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -28,6 +29,30 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+def wait_for_new_token():
+    """Wait for token.json to be updated (e.g., scp'd from Mac), then return to retry auth."""
+    logger.critical(
+        "Waiting for updated token.json at %s — "
+        "re-authenticate on Mac and scp token.json to this machine.",
+        TOKEN_PATH,
+    )
+    try:
+        original_mtime = TOKEN_PATH.stat().st_mtime
+    except FileNotFoundError:
+        original_mtime = None
+
+    while True:
+        time.sleep(30)
+        try:
+            current_mtime = TOKEN_PATH.stat().st_mtime
+        except FileNotFoundError:
+            current_mtime = None
+
+        if current_mtime != original_mtime:
+            logger.info("token.json changed — retrying authentication")
+            return
+
 
 def process_emails():
     """Process unread emails: fetch, classify, label."""
@@ -131,9 +156,8 @@ def main():
             break
 
         except AuthenticationError as e:
-            logger.critical(f"FATAL: {e}")
-            logger.critical("Service cannot continue without valid credentials. Exiting.")
-            raise SystemExit(2)
+            logger.critical(f"Authentication failed: {e}")
+            wait_for_new_token()
 
         except Exception as e:
             logger.error(f"Error in main loop: {e}")

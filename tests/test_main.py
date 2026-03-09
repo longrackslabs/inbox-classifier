@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch, call
-from inbox_classifier.main import process_emails
+from inbox_classifier.main import process_emails, wait_for_new_token
 
 @patch('inbox_classifier.main.load_dotenv')
 @patch('inbox_classifier.main.os.getenv')
@@ -307,3 +307,95 @@ def test_process_emails_skips_matching_email(
     assert mock_apply_label.call_count == 1
     # Only non-skipped email was logged
     assert mock_logger.log_classification.call_count == 1
+
+
+class TestWaitForNewToken:
+    """Tests for wait_for_new_token token-polling behavior."""
+
+    @patch('inbox_classifier.main.time.sleep')
+    @patch('inbox_classifier.main.TOKEN_PATH')
+    def test_returns_when_mtime_changes(self, mock_token_path, mock_sleep):
+        """When token.json mtime changes, wait_for_new_token returns."""
+        mock_stat_original = Mock()
+        mock_stat_original.st_mtime = 1000.0
+
+        mock_stat_updated = Mock()
+        mock_stat_updated.st_mtime = 2000.0
+
+        mock_token_path.stat.side_effect = [
+            mock_stat_original,   # initial mtime check
+            mock_stat_original,   # first poll — no change
+            mock_stat_updated,    # second poll — changed
+        ]
+
+        wait_for_new_token()
+
+        assert mock_sleep.call_count == 2
+        mock_sleep.assert_called_with(30)
+
+    @patch('inbox_classifier.main.time.sleep')
+    @patch('inbox_classifier.main.TOKEN_PATH')
+    def test_returns_when_missing_file_appears(self, mock_token_path, mock_sleep):
+        """When token.json doesn't exist initially but appears, returns."""
+        mock_stat_new = Mock()
+        mock_stat_new.st_mtime = 1000.0
+
+        mock_token_path.stat.side_effect = [
+            FileNotFoundError,    # initial — file missing
+            FileNotFoundError,    # first poll — still missing
+            mock_stat_new,        # second poll — file appeared
+        ]
+
+        wait_for_new_token()
+
+        assert mock_sleep.call_count == 2
+
+    @patch('inbox_classifier.main.time.sleep')
+    @patch('inbox_classifier.main.TOKEN_PATH')
+    def test_keeps_waiting_when_no_change(self, mock_token_path, mock_sleep):
+        """Keeps polling when mtime hasn't changed."""
+        mock_stat = Mock()
+        mock_stat.st_mtime = 1000.0
+
+        mock_stat_updated = Mock()
+        mock_stat_updated.st_mtime = 2000.0
+
+        mock_token_path.stat.side_effect = [
+            mock_stat,            # initial
+            mock_stat,            # poll 1 — same
+            mock_stat,            # poll 2 — same
+            mock_stat,            # poll 3 — same
+            mock_stat_updated,    # poll 4 — changed
+        ]
+
+        wait_for_new_token()
+
+        assert mock_sleep.call_count == 4
+
+
+class TestMainAuthRetry:
+    """Tests for main loop auth failure → wait → retry behavior."""
+
+    @patch('inbox_classifier.main.time.sleep')
+    @patch('inbox_classifier.main.wait_for_new_token')
+    @patch('inbox_classifier.main.write_heartbeat')
+    @patch('inbox_classifier.main.process_emails')
+    def test_auth_error_waits_then_retries(self, mock_process, mock_heartbeat,
+                                           mock_wait, mock_sleep):
+        """AuthenticationError triggers wait_for_new_token, then retries."""
+        from inbox_classifier.gmail_auth import AuthenticationError
+        from inbox_classifier.main import main
+
+        # First call: auth error. Second call: success. Third call: KeyboardInterrupt to exit.
+        mock_process.side_effect = [
+            AuthenticationError("token revoked"),
+            None,
+            KeyboardInterrupt,
+        ]
+
+        main()
+
+        mock_wait.assert_called_once()
+        assert mock_process.call_count == 3
+        # heartbeat only written on success (second call)
+        mock_heartbeat.assert_called_once()
