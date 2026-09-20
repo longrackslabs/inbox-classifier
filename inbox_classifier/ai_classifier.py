@@ -1,9 +1,13 @@
+import os
 import re
-from anthropic import Anthropic
-from typing import Dict, List
 import time
+from typing import Dict, List, Optional
+import requests
 
 from .rules_loader import load_rules
+
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+DEFAULT_MODEL = "gemini-3.6-flash"
 
 
 def parse_categories(rules: str) -> List[str]:
@@ -11,12 +15,11 @@ def parse_categories(rules: str) -> List[str]:
     return re.findall(r'^(\w+) emails include:', rules, re.MULTILINE)
 
 
-def classify_email(email: Dict[str, str], api_key: str) -> Dict[str, str]:
-    """Classify email using Claude API.
+def classify_email(email: Dict[str, str], api_key: str, model: Optional[str] = None) -> Optional[Dict[str, str]]:
+    """Classify email using Google Gemini API.
 
     Categories are parsed dynamically from rules.md.
     """
-    client = Anthropic(api_key=api_key)
     rules = load_rules()
     categories = parse_categories(rules)
 
@@ -40,23 +43,40 @@ Respond with EXACTLY this format:
     # Rate limiting: max 1 request per second
     time.sleep(1)
 
-    message = client.messages.create(
-        model="claude-sonnet-4-5-20250929",
-        max_tokens=150,
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
+    chosen_model = model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+    url = f"{GEMINI_API_URL}/{chosen_model}:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "maxOutputTokens": 150,
+            "thinkingConfig": {
+                "thinkingBudget": 0
+            }
+        }
+    }
 
-    response_text = message.content[0].text
+    resp = requests.post(url, json=payload, timeout=30)
+    resp.raise_for_status()
+    data = resp.json()
+
+    candidates = data.get("candidates", [])
+    if not candidates:
+        return None
+
+    parts = candidates[0].get("content", {}).get("parts", [])
+    if not parts:
+        return None
+
+    response_text = parts[0].get("text", "").strip()
 
     # Parse response against dynamic categories
     for category in categories:
-        if response_text.startswith(f'{category}:'):
+        if response_text.lower().startswith(f'{category.lower()}:'):
+            reasoning = re.sub(f'^{category}:', '', response_text, flags=re.IGNORECASE).strip()
             return {
                 'classification': category,
-                'reasoning': response_text.replace(f'{category}:', '').strip()
+                'reasoning': reasoning
             }
 
-    # No match — return None so caller can skip this email
+    # No match, return None so caller can skip this email
     return None

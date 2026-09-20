@@ -57,10 +57,10 @@ def wait_for_new_token():
 def process_emails():
     """Process unread emails: fetch, classify, label."""
     load_dotenv()
-    api_key = os.getenv('ANTHROPIC_API_KEY')
+    api_key = os.getenv('GEMINI_API_KEY') or os.getenv('ANTHROPIC_API_KEY')
 
     if not api_key:
-        raise ValueError("ANTHROPIC_API_KEY not found in environment")
+        raise ValueError("GEMINI_API_KEY not found in environment")
 
     # Parse categories and skip rules
     rules = load_rules()
