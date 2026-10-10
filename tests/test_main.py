@@ -82,7 +82,7 @@ def test_process_emails_full_workflow(
 
     # Verify workflow
     mock_load_dotenv.assert_called_once()
-    mock_getenv.assert_called_once_with('ANTHROPIC_API_KEY')
+    mock_getenv.assert_called_once_with('GEMINI_API_KEY')
     mock_load_rules.assert_called_once()
     mock_parse_categories.assert_called_once()
     mock_get_service.assert_called_once()
@@ -121,7 +121,7 @@ def test_process_emails_missing_api_key(mock_getenv, mock_load_dotenv):
     """Test that missing API key raises error."""
     mock_getenv.return_value = None
 
-    with pytest.raises(ValueError, match="ANTHROPIC_API_KEY not found"):
+    with pytest.raises(ValueError, match="GEMINI_API_KEY not found"):
         process_emails()
 
 @patch('inbox_classifier.main.load_dotenv')

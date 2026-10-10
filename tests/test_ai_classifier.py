@@ -14,17 +14,15 @@ Optional emails include:
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
 @patch('inbox_classifier.ai_classifier.load_rules')
-@patch('inbox_classifier.ai_classifier.Anthropic')
-def test_classify_email_returns_important(mock_anthropic, mock_load_rules, mock_sleep):
+@patch('inbox_classifier.ai_classifier.requests.post')
+def test_classify_email_returns_important(mock_post, mock_load_rules, mock_sleep):
     """Test classification of important email."""
     mock_load_rules.return_value = MOCK_RULES
 
-    mock_client = Mock()
-    mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='Important: This is a receipt')]
-    mock_client.messages.create.return_value = mock_response
+    mock_response.json.return_value = {'candidates': [{'content': {'parts': [{'text': 'Important: This is a receipt'}]}}]}
+    mock_post.return_value = mock_response
 
     email = {
         'subject': 'Your receipt',
@@ -40,17 +38,15 @@ def test_classify_email_returns_important(mock_anthropic, mock_load_rules, mock_
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
 @patch('inbox_classifier.ai_classifier.load_rules')
-@patch('inbox_classifier.ai_classifier.Anthropic')
-def test_classify_email_returns_optional(mock_anthropic, mock_load_rules, mock_sleep):
+@patch('inbox_classifier.ai_classifier.requests.post')
+def test_classify_email_returns_optional(mock_post, mock_load_rules, mock_sleep):
     """Test classification of optional email."""
     mock_load_rules.return_value = MOCK_RULES
 
-    mock_client = Mock()
-    mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='Optional: This is a newsletter')]
-    mock_client.messages.create.return_value = mock_response
+    mock_response.json.return_value = {'candidates': [{'content': {'parts': [{'text': 'Optional: This is a newsletter'}]}}]}
+    mock_post.return_value = mock_response
 
     email = {
         'subject': 'Weekly digest',
@@ -66,17 +62,15 @@ def test_classify_email_returns_optional(mock_anthropic, mock_load_rules, mock_s
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
 @patch('inbox_classifier.ai_classifier.load_rules')
-@patch('inbox_classifier.ai_classifier.Anthropic')
-def test_classify_email_returns_routine(mock_anthropic, mock_load_rules, mock_sleep):
+@patch('inbox_classifier.ai_classifier.requests.post')
+def test_classify_email_returns_routine(mock_post, mock_load_rules, mock_sleep):
     """Test classification of routine email."""
     mock_load_rules.return_value = MOCK_RULES
 
-    mock_client = Mock()
-    mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='Routine: Monthly account statement')]
-    mock_client.messages.create.return_value = mock_response
+    mock_response.json.return_value = {'candidates': [{'content': {'parts': [{'text': 'Routine: Monthly account statement'}]}}]}
+    mock_post.return_value = mock_response
 
     email = {
         'subject': 'Your monthly statement',
@@ -92,17 +86,15 @@ def test_classify_email_returns_routine(mock_anthropic, mock_load_rules, mock_sl
 
 @patch('inbox_classifier.ai_classifier.time.sleep')
 @patch('inbox_classifier.ai_classifier.load_rules')
-@patch('inbox_classifier.ai_classifier.Anthropic')
-def test_classify_email_returns_none_for_unrecognized(mock_anthropic, mock_load_rules, mock_sleep):
+@patch('inbox_classifier.ai_classifier.requests.post')
+def test_classify_email_returns_none_for_unrecognized(mock_post, mock_load_rules, mock_sleep):
     """Test that unrecognized responses return None (no default category)."""
     mock_load_rules.return_value = MOCK_RULES
 
-    mock_client = Mock()
-    mock_anthropic.return_value = mock_client
 
     mock_response = Mock()
-    mock_response.content = [Mock(text='I am not sure about this one')]
-    mock_client.messages.create.return_value = mock_response
+    mock_response.json.return_value = {'candidates': [{'content': {'parts': [{'text': 'I am not sure about this one'}]}}]}
+    mock_post.return_value = mock_response
 
     email = {
         'subject': 'Ambiguous',

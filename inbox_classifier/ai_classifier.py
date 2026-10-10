@@ -7,7 +7,9 @@ import requests
 from .rules_loader import load_rules
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-DEFAULT_MODEL = "gemini-3.6-flash"
+# Cheapest current Gemini API model for this lightweight classification task.
+# GEMINI_MODEL can still override this default through the service environment.
+DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
 
 def parse_categories(rules: str) -> List[str]:
@@ -44,7 +46,7 @@ Respond with EXACTLY this format:
     time.sleep(1)
 
     chosen_model = model or os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
-    url = f"{GEMINI_API_URL}/{chosen_model}:generateContent?key={api_key}"
+    url = f"{GEMINI_API_URL}/{chosen_model}:generateContent"
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
@@ -55,9 +57,18 @@ Respond with EXACTLY this format:
         }
     }
 
-    resp = requests.post(url, json=payload, timeout=30)
-    resp.raise_for_status()
-    data = resp.json()
+    # Keep credentials out of URLs, which requests includes in HTTP errors.
+    try:
+        resp = requests.post(
+            url, headers={"x-goog-api-key": api_key}, json=payload, timeout=30
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as exc:
+        # Never propagate request URLs, headers, or response bodies into logs.
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        detail = f"HTTP {status}" if status is not None else type(exc).__name__
+        raise RuntimeError(f"Gemini request failed ({detail})") from None
 
     candidates = data.get("candidates", [])
     if not candidates:
